@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة السوبر ماركت الشامل</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; background-color: #f3f4f6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header class="bg-indigo-700 text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-store"></i> نظام إدارة السوبر ماركت الذكي</h1>
+            <span class="text-xs bg-indigo-800 px-3 py-1 rounded-full">نسخة سحابية متكاملة</span>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white shadow border-b">
+        <div class="container mx-auto px-4 flex overflow-x-auto gap-2 py-2">
+            <button onclick="switchTab('pos')" id="btn-pos" class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white flex items-center gap-2 shrink-0"><i class="fa-solid fa-cash-register"></i> نقطة البيع (POS)</button>
+            <button onclick="switchTab('inventory')" id="btn-inventory" class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm text-gray-600 hover:bg-gray-100 flex items-center gap-2 shrink-0"><i class="fa-solid fa-boxes-stacked"></i> المخزون والأصناف</button>
+            <button onclick="switchTab('purchases')" id="btn-purchases" class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm text-gray-600 hover:bg-gray-100 flex items-center gap-2 shrink-0"><i class="fa-solid fa-truck-ramp-box"></i> المشتريات والموردين</button>
+            <button onclick="switchTab('expenses')" id="btn-expenses" class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm text-gray-600 hover:bg-gray-100 flex items-center gap-2 shrink-0"><i class="fa-solid fa-wallet"></i> المصروفات والخزينة</button>
+            <button onclick="switchTab('reports')" id="btn-reports" class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm text-gray-600 hover:bg-gray-100 flex items-center gap-2 shrink-0"><i class="fa-solid fa-chart-line"></i> تقارير الأرباح</button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container mx-auto px-4 py-6 flex-grow">
+
+        <!-- 1. POS TAB -->
+        <div id="tab-pos" class="tab-content active grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-basket-shopping text-indigo-600"></i> قائمة المنتجات المتاحة</h2>
+                <div class="mb-4">
+                    <input type="text" id="pos-search" oninput="filterPOSProducts()" placeholder="ابحث عن اسم المنتج أو الباركود..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div id="pos-products-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto p-1">
+                    <!-- Dynamic Products -->
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow flex flex-col justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-receipt text-indigo-600"></i> فاتورة البيع الحالية</h2>
+                    <div class="border rounded-lg overflow-hidden mb-4 max-h-[300px] overflow-y-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-gray-50 border-b">
+                                <tr>
+                                    <th class="p-2">المنتج</th>
+                                    <th class="p-2">السعر</th>
+                                    <th class="p-2">الكمية</th>
+                                    <th class="p-2">إجمالي</th>
+                                    <th class="p-2"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-items">
+                                <!-- Cart Items -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="border-t pt-4">
+                    <div class="flex justify-between mb-2 text-sm"><span>المجموع الفرعي:</span><span id="cart-subtotal" class="font-bold">0.00 ج.م</span></div>
+                    <div class="flex justify-between mb-4 text-sm items-center">
+                        <span>خصم إضافي:</span>
+                        <input type="number" id="cart-discount" value="0" oninput="updateCartTotals()" class="w-20 px-2 py-1 border rounded text-left">
+                    </div>
+                    <div class="flex justify-between mb-4 text-lg font-extrabold text-indigo-700"><span>الصافي المطلوب:</span><span id="cart-total">0.00 ج.م</span></div>
+                    <button onclick="completeSale()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"><i class="fa-solid fa-check-circle"></i> إتمام البيع وطباعة الفاتورة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. INVENTORY TAB -->
+        <div id="tab-inventory" class="tab-content">
+            <div class="bg-white p-4 rounded-xl shadow mb-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-indigo-600"></i> إضافة منتج جديد للمخزن</h2>
+                <form id="product-form" onsubmit="saveProduct(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <input type="text" id="p-name" placeholder="اسم المنتج" required class="px-3 py-2 border rounded-lg">
+                    <input type="text" id="p-barcode" placeholder="الباركود (اختياري)" class="px-3 py-2 border rounded-lg">
+                    <input type="number" step="0.01" id="p-buy" placeholder="سعر الشراء" required class="px-3 py-2 border rounded-lg">
+                    <input type="number" step="0.01" id="p-sell" placeholder="سعر البيع" required class="px-3 py-2 border rounded-lg">
+                    <input type="number" id="p-qty" placeholder="الكمية الحالية" required class="px-3 py-2 border rounded-lg">
+                    <button type="submit" class="sm:col-span-2 lg:col-span-5 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition"><i class="fa-solid fa-save"></i> حفظ المنتج في المخزون</button>
+                </form>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-indigo-600"></i> جرد المخزن الحالي</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="p-3">المنتج</th>
+                                <th class="p-3">الباركود</th>
+                                <th class="p-3">شراء</th>
+                                <th class="p-3">بيع</th>
+                                <th class="p-3">الكمية</th>
+                                <th class="p-3">الحالة</th>
+                                <th class="p-3">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. PURCHASES TAB -->
+        <div id="tab-purchases" class="tab-content">
+            <div class="bg-white p-4 rounded-xl shadow mb-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-truck text-indigo-600"></i> تسجيل فاتورة شراء جديدة (توريد)</h2>
+                <form onsubmit="savePurchase(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <select id="pur-product" required class="px-3 py-2 border rounded-lg"><option value="">اختر المنتج...</option></select>
+                    <input type="number" id="pur-qty" placeholder="الكمية المضافة" required class="px-3 py-2 border rounded-lg">
+                    <input type="number" step="0.01" id="pur-cost" placeholder="إجمالي الفاتورة المدفوعة" required class="px-3 py-2 border rounded-lg">
+                    <button type="submit" class="sm:col-span-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg"><i class="fa-solid fa-plus"></i> إضافة للمخزون وتحديث الحسابات</button>
+                </form>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">سجل المشتريات السابقة</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-gray-50 border-b">
+                            <tr><th class="p-3">التاريخ</th><th class="p-3">المنتج</th><th class="p-3">الكمية</th><th class="p-3">التكلفة الإجمالية</th></tr>
+                        </thead>
+                        <tbody id="purchases-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. EXPENSES TAB -->
+        <div id="tab-expenses" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white p-4 rounded-xl shadow border-r-4 border-blue-500">
+                    <h3 class="text-gray-500 text-sm">إجمالي نقدية الخزينة (الدرج)</h3>
+                    <p id="cash-drawer" class="text-2xl font-bold text-gray-800 mt-2">0.00 ج.م</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow border-r-4 border-red-500">
+                    <h3 class="text-gray-500 text-sm">إجمالي المصروفات النثرية</h3>
+                    <p id="total-expenses" class="text-2xl font-bold text-gray-800 mt-2">0.00 ج.م</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow border-r-4 border-green-500">
+                    <h3 class="text-gray-500 text-sm">إجمالي المبيعات المحصلة</h3>
+                    <p id="total-sales-box" class="text-2xl font-bold text-gray-800 mt-2">0.00 ج.م</p>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow mb-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-indigo-600"></i> تسجیل مصروف يومي جديد</h2>
+                <form onsubmit="saveExpense(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <input type="text" id="exp-title" placeholder="بند المصروف (كهرباء، بوفيه، إيجار...)" required class="px-3 py-2 border rounded-lg">
+                    <input type="number" step="0.01" id="exp-amount" placeholder="المبلغ" required class="px-3 py-2 border rounded-lg">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg"><i class="fa-solid fa-minus-circle"></i> خصم من الخزينة وحفظ</button>
+                </form>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">سجل المصروفات</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-gray-50 border-b">
+                            <tr><th class="p-3">التاريخ</th><th class="p-3">البند</th><th class="p-3">المبلغ</th></tr>
+                        </thead>
+                        <tbody id="expenses-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. REPORTS TAB -->
+        <div id="tab-reports" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <h3 class="text-md font-bold text-gray-800 mb-4">ملخص الأرباح المالية</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between p-3 bg-gray-50 rounded"><span>إجمالي المبيعات:</span><span id="rep-sales" class="font-bold text-blue-600">0.00 ج.م</span></div>
+                        <div class="flex justify-between p-3 bg-gray-50 rounded"><span>تكلفة البضاعة المباعة:</span><span id="rep-cost" class="font-bold text-orange-600">0.00 ج.م</span></div>
+                        <div class="flex justify-between p-3 bg-gray-50 rounded"><span>إجمالي المصروفات:</span><span id="rep-expenses" class="font-bold text-red-600">0.00 ج.م</span></div>
+                        <div class="flex justify-between p-3 bg-indigo-50 border border-indigo-200 rounded text-lg"><span>صافي الربح الحقيقي:</span><span id="rep-net" class="font-black text-indigo-700">0.00 ج.م</span></div>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow flex flex-col items-center justify-center">
+                    <h3 class="text-md font-bold text-gray-800 mb-4 self-start">حركة الإيرادات والمصروفات</h3>
+                    <div class="w-full max-w-xs"><canvas id="financialChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JavaScript System Logic -->
+    <script>
+        let db = {
+            products: JSON.parse(localStorage.getItem('sm_products')) || [
+                { id: 1, name: 'مياه معدنية 600مل', barcode: '1001', buy: 4, sell: 6, qty: 50 },
+                { id: 2, name: 'شوكولاتة بالحليب', barcode: '1002', buy: 12, sell: 15, qty: 8 },
+                { id: 3, name: 'علبة عصير مانجو', barcode: '1003', buy: 6, sell: 8, qty: 3 }
+            ],
+            cart: [],
+            purchases: JSON.parse(localStorage.getItem('sm_purchases')) || [],
+            expenses: JSON.parse(localStorage.getItem('sm_expenses')) || [],
+            sales: JSON.parse(localStorage.getItem('sm_sales')) || []
+        };
+
+        function saveData() {
+            localStorage.setItem('sm_products', JSON.stringify(db.products));
+            localStorage.setItem('sm_purchases', JSON.stringify(db.purchases));
+            localStorage.setItem('sm_expenses', JSON.stringify(db.expenses));
+            localStorage.setItem('sm_sales', JSON.stringify(db.sales));
+            renderAll();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-indigo-600', 'text-white');
+                el.classList.add('text-gray-600', 'hover:bg-gray-100');
+            });
+            document.getElementById('tab-' + tabId).classList.add('active');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('bg-indigo-600', 'text-white');
+            activeBtn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+            if(tabId === 'reports') updateReports();
+        }
+
+        function renderAll() {
+            renderPOSProducts();
+            renderCart();
+            renderInventory();
+            renderPurchases();
+            renderExpenses();
+            updateFinancials();
+        }
+
+        function renderPOSProducts(filter = '') {
+            const grid = document.getElementById('pos-products-grid');
+            grid.innerHTML = '';
+            db.products.filter(p => p.name.includes(filter) || p.barcode.includes(filter)).forEach(p => {
+                grid.innerHTML += `
+                    <div onclick="addToCart(${p.id})" class="p-3 border rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-sm">${p.name}</h4>
+                            <span class="text-xs text-gray-500">مخزون: ${p.qty}</span>
+                        </div>
+                        <div class="mt-2 text-indigo-600 font-extrabold text-sm">${p.sell} ج.م</div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterPOSProducts() {
+            renderPOSProducts(document.getElementById('pos-search').value);
+        }
+
+        function addToCart(productId) {
+            const product = db.products.find(p => p.id === productId);
+            if(product.qty <= 0) { alert('عذراً، هذا المنتج نفد من المخزون!'); return; }
+            let item = db.cart.find(i => i.id === productId);
+            if(item) {
+                if(item.qty < product.qty) item.qty++;
+                else alert('الكمية المطلوبة أكبر من المتوفر في المخزن!');
+            } else {
+                db.cart.push({ id: product.id, name: product.name, price: product.sell, buyPrice: product.buy, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.getElementById('cart-items');
+            tbody.innerHTML = '';
+            let subtotal = 0;
+            db.cart.forEach((item, index) => {
+                let total = item.price * item.qty;
+                subtotal += total;
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-2">${item.name}</td>
+                        <td class="p-2">${item.price}</td>
+                        <td class="p-2"><input type="number" value="${item.qty}" min="1" onchange="updateCartQty(${index}, this.value)" class="w-14 border rounded px-1 text-center"></td>
+                        <td class="p-2">${total.toFixed(2)}</td>
+                        <td class="p-2"><button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('cart-subtotal').innerText = subtotal.toFixed(2) + ' ج.م';
+            updateCartTotals();
+        }
+
+        function updateCartQty(index, qty) {
+            let q = parseInt(qty);
+            let prod = db.products.find(p => p.id === db.cart[index].id);
+            if(q > prod.qty) { alert('الكمية تتجاوز المخزون!'); renderCart(); return; }
+            db.cart[index].qty = q > 0 ? q : 1;
+            renderCart();
+        }
+
+        function removeFromCart(index) {
+            db.cart.splice(index, 1);
+            renderCart();
+        }
+
+        function updateCartTotals() {
+            let subtotal = db.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            let discount = parseFloat(document.getElementById('cart-discount').value) || 0;
+            let total = Math.max(0, subtotal - discount);
+            document.getElementById('cart-total').innerText = total.toFixed(2) + ' ج.م';
+        }
+
+        function completeSale() {
+            if(db.cart.length === 0) { alert('السلة فارغة!'); return; }
+            let subtotal = db.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            let discount = parseFloat(document.getElementById('cart-discount').value) || 0;
+            let total = Math.max(0, subtotal - discount);
+            let totalBuyCost = db.cart.reduce((sum, item) => sum + (item.buyPrice * item.qty), 0);
+
+            // Deduct stock
+            db.cart.forEach(item => {
+                let p = db.products.find(prod => prod.id === item.id);
+                if(p) p.qty -= item.qty;
+            });
+
+            db.sales.push({
+                date: new Date().toLocaleString('ar-EG'),
+                items: [...db.cart],
+                total: total,
+                buyCost: totalBuyCost
+            });
+
+            db.cart = [];
+            document.getElementById('cart-discount').value = 0;
+            saveData();
+            alert('تم إتمام عملية البيع بنجاح وتحديث المخزون والخزينة!');
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            db.products.push({
+                id: Date.now(),
+                name: document.getElementById('p-name').value,
+                barcode: document.getElementById('p-barcode').value || 'N/A',
+                buy: parseFloat(document.getElementById('p-buy').value),
+                sell: parseFloat(document.getElementById('p-sell').value),
+                qty: parseInt(document.getElementById('p-qty').value)
+            });
+            document.getElementById('product-form').reset();
+            saveData();
+        }
+
+        function renderInventory() {
+            const tbody = document.getElementById('inventory-table-body');
+            const select = document.getElementById('pur-product');
+            tbody.innerHTML = '';
+            select.innerHTML = '<option value="">اختر المنتج...</option>';
+            db.products.forEach(p => {
+                let statusBadge = p.qty <= 5 ? '<span class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs">منخفض جداً</span>' : '<span class="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">متوفر</span>';
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-3 font-semibold">${p.name}</td>
+                        <td class="p-3 text-gray-500">${p.barcode}</td>
+                        <td class="p-3">${p.buy} ج.م</td>
+                        <td class="p-3">${p.sell} ج.م</td>
+                        <td class="p-3 font-bold">${p.qty}</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3"><button onclick="deleteProduct(${p.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+                select.innerHTML += `<option value="${p.id}">${p.name} (المتوفر: ${p.qty})</option>`;
+            });
+        }
+
+        function deleteProduct(id) {
+            if(confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                db.products = db.products.filter(p => p.id !== id);
+                saveData();
+            }
+        }
+
+        function savePurchase(e) {
+            e.preventDefault();
+            let prodId = parseInt(document.getElementById('pur-product').value);
+            let qty = parseInt(document.getElementById('pur-qty').value);
+            let cost = parseFloat(document.getElementById('pur-cost').value);
+            let product = db.products.find(p => p.id === prodId);
+            if(product) product.qty += qty;
+            db.purchases.push({ date: new Date().toLocaleDateString('ar-EG'), productName: product.name, qty: qty, cost: cost });
+            document.getElementById('pur-product').value = '';
+            document.getElementById('pur-qty').value = '';
+            document.getElementById('pur-cost').value = '';
+            saveData();
+        }
+
+        function renderPurchases() {
+            const tbody = document.getElementById('purchases-table-body');
+            tbody.innerHTML = '';
+            db.purchases.forEach(pur => {
+                tbody.innerHTML += `<tr class="border-b"><td class="p-3">${pur.date}</td><td class="p-3">${pur.productName}</td><td class="p-3">${pur.qty}</td><td class="p-3">${pur.cost} ج.م</td></tr>`;
+            });
+        }
+
+        function saveExpense(e) {
+            e.preventDefault();
+            db.expenses.push({
+                date: new Date().toLocaleDateString('ar-EG'),
+                title: document.getElementById('exp-title').value,
+                amount: parseFloat(document.getElementById('exp-amount').value)
+            });
+            document.getElementById('exp-title').value = '';
+            document.getElementById('exp-amount').value = '';
+            saveData();
+        }
+
+        function renderExpenses() {
+            const tbody = document.getElementById('expenses-table-body');
+            tbody.innerHTML = '';
+            db.expenses.forEach(exp => {
+                tbody.innerHTML += `<tr class="border-b"><td class="p-3">${exp.date}</td><td class="p-3">${exp.title}</td><td class="p-3 text-red-600">${exp.amount} ج.م</td></tr>`;
+            });
+        }
+
+        let financialChartInstance = null;
+        function updateFinancials() {
+            let totalSales = db.sales.reduce((sum, s) => sum + s.total, 0);
+            let totalExpenses = db.expenses.reduce((sum, e) => sum + e.amount, 0);
+            let cashDrawer = totalSales - totalExpenses;
+            document.getElementById('total-sales-box').innerText = totalSales.toFixed(2) + ' ج.م';
+            document.getElementById('total-expenses').innerText = totalExpenses.toFixed(2) + ' ج.م';
+            document.getElementById('cash-drawer').innerText = cashDrawer.toFixed(2) + ' ج.م';
+        }
+
+        function updateReports() {
+            let totalSales = db.sales.reduce((sum, s) => sum + s.total, 0);
+            let totalBuyCost = db.sales.reduce((sum, s) => sum + s.buyCost, 0);
+            let totalExpenses = db.expenses.reduce((sum, e) => sum + e.amount, 0);
+            let netProfit = totalSales - totalBuyCost - totalExpenses;
+
+            document.getElementById('rep-sales').innerText = totalSales.toFixed(2) + ' ج.م';
+            document.getElementById('rep-cost').innerText = totalBuyCost.toFixed(2) + ' ج.م';
+            document.getElementById('rep-expenses').innerText = totalExpenses.toFixed(2) + ' ج.م';
+            document.getElementById('rep-net').innerText = netProfit.toFixed(2) + ' ج.م';
+
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            if(financialChartInstance) financialChartInstance.destroy();
+            financialChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['المبيعات', 'المصروفات'],
+                    datasets: [{ data: [totalSales, totalExpenses], backgroundColor: ['#3b82f6', '#ef4444'] }]
+                }
+            });
+        }
+
+        window.onload = renderAll;
+    </script>
+</body>
+</html>
